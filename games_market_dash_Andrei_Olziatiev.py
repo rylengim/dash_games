@@ -11,9 +11,6 @@ df_games.fillna({'Year_of_Release':0}, inplace=True)
 df_games['Year_of_Release'] = df_games['Year_of_Release'].astype(int)
 # Приведем столбец User_Score к числовому формату и заполним ошибкочные значения NaN
 df_games['User_Score'] = pd.to_numeric(df_games['User_Score'], errors='coerce')
-# Преобразуем значения из столбца Rating в числовой формат
-rating_mapping = {'E': 1, 'T': 2, 'M': 3, 'E10+': 4, 'K-A': 5, 'AO': 6, 'EC': 7, 'RP': 8}
-df_games['Rating_Num'] = df_games['Rating'].map(rating_mapping)
 # Исключаем проекты ранее 1990 и позднее 2010 годов и убираем строки с пропущенными значениями
 data = df_games.query('1990 <= Year_of_Release <= 2010').dropna()
 available_platform_filters = sorted(data['Platform'].unique())
@@ -128,9 +125,16 @@ def update_dashboard(selected_platforms, selected_genres, selected_years):
         style={'textAlign': 'center'}
     )
     
-    # График 4: Средний возрастной рейтинг по жанрам
-    avg_rating_by_genre = filtered_data.groupby('Genre')['Rating_Num'].mean().reset_index()
-    age_rating_chart = px.bar(avg_rating_by_genre, x='Genre', y='Rating_Num', title="Средний возрастной рейтинг по жанрам")
+    # График 4: Число игр в каждой категории ESRB
+    rating_counts = filtered_data.groupby('Rating').size().reset_index(name='Count')
+    age_rating_chart = px.bar(
+        rating_counts,
+        x='Rating',
+        y='Count',
+        title="Распределение игр по категориям ESRB",
+        labels={'Rating': 'Категория ESRB', 'Count': 'Количество игр'}
+    )
+    age_rating_chart.update_yaxes(rangemode='tozero')
     
     # График 5: Scatter plot
     scatter_plot = px.scatter(
@@ -156,4 +160,4 @@ def update_dashboard(selected_platforms, selected_genres, selected_years):
 
 # Запуск приложения
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run(debug=True)
